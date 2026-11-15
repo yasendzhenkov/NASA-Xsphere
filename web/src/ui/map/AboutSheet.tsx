@@ -1,4 +1,4 @@
-import { ABOUT, PRODUCT } from '../copy';
+import { ABOUT, PRODUCT, VIDEOS } from '../copy';
 
 /** About / data / references / SI disclosure — the trust layer judges look for (Relevance, Presentation). */
 export function AboutSheet({ onClose, mock }: { onClose: () => void; mock: boolean }) {
@@ -9,6 +9,7 @@ export function AboutSheet({ onClose, mock }: { onClose: () => void; mock: boole
         <button className="pcard__x" onClick={onClose} aria-label="Close About">✕</button>
       </div>
       <p>{ABOUT.what}</p>
+      <p className="videolinks small">{VIDEOS.map((v) => <a key={v.href} href={v.href} target="_blank" rel="noreferrer">{v.label}</a>)}</p>
       {mock && <p className="pcard__note small">The images here are simulated until the team’s real SPHEREx cut-outs are published.</p>}
 
       <section className="sheet__sec">

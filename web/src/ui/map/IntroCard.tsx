@@ -1,4 +1,4 @@
-import { INTRO, PRODUCT } from '../copy';
+import { INTRO, PRODUCT, VIDEOS } from '../copy';
 import { BlinkMark } from '../components/Chrome';
 
 /** First-visit story card over the overview map: why this matters + two ways in. */
@@ -15,6 +15,7 @@ export function IntroCard({ onTour, onExplore, onAbout }: { onTour: () => void; 
         </button>
         <button className="btn btn--ghost" onClick={onExplore}>{INTRO.explore}</button>
       </div>
+      <p className="videolinks small">{VIDEOS.map((v) => <a key={v.href} href={v.href} target="_blank" rel="noreferrer">{v.label}</a>)}</p>
       <button className="link small intro__about" onClick={onAbout}>About this project and the data</button>
     </section>
   );

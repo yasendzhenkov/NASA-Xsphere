@@ -77,6 +77,8 @@ export function starParams(s: Src, meta: { plx_mas?: number | null; pmra_masyr?:
       if (v.length >= 3 && (!vari || v.length > vari.n)) vari = { ratio: Math.max(...v) / Math.min(...v), band, n: v.length };
     }
   }
+  // dust round a young star dims and reddens it, and the dwarf colour table assumes none: say so instead of a firm number
+  if (cls === 'young-star' && radius != null) radiusHow += ' · rough: dust around young stars dims them, so likely too small';
   return { cls, teff, teffHow, radius, radiusHow, distPc, distHow, pm, vari };
 }
 

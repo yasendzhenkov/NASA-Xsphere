@@ -1322,12 +1322,12 @@ export function SkyMap({ loc }: { loc: string }) {
         <canvas ref={canvasRef} className="skymap__canvas" aria-hidden="true" />
 
         {patchOpen && meta && (
-          <div ref={patchRef} className={`patch patch--${load}`}>
+          <div ref={patchRef} className={`patch patch--${load} ${mode === 'side' ? 'patch--side' : ''}`}>
             {ready ? (
               <BlinkCanvas
                 manifest={manifest!}
                 frames={frames!}
-                mode={mode === 'side' ? 'blink' : mode}
+                mode={mode}
                 frameIndex={frame}
                 playing={playing && mode !== 'side' && nEpochs > 1}
                 fps={speed}
@@ -1344,19 +1344,22 @@ export function SkyMap({ loc }: { loc: string }) {
             ) : (
               <div className="patch__loading" aria-hidden="true" />
             )}
-            {ready && showMe && tp && (
+            {ready && showMe && tp && mode !== 'side' && (
               <span className="patch__ring" aria-hidden="true" style={{ left: `${((tp[0] + 0.5) / nx) * 100}%`, top: `${((tp[1] + 0.5) / ny) * 100}%` }} />
             )}
-            {ready && <MarkerOverlay manifest={manifest!} frame={frame} show={overlayProps} />}
-            {ready && det && <DetectionOverlay list={det.list} nx={manifest!.nx ?? 64} ny={manifest!.ny ?? manifest!.nx ?? 64} focus={detFocus} targetPx={overlayProps.track ? tp : null} />}
+            {ready && mode !== 'side' && <MarkerOverlay manifest={manifest!} frame={frame} show={overlayProps} />}
+            {ready && det && mode !== 'side' && <DetectionOverlay list={det.list} nx={manifest!.nx ?? 64} ny={manifest!.ny ?? manifest!.nx ?? 64} focus={detFocus} targetPx={overlayProps.track ? tp : null} />}
             <span className="patch__frame" aria-hidden="true" />
             <span className="patch__name">{meta.name}</span>
             {ready && fr && (
               <span className="patch__label" aria-hidden="true">
                 <span className="mono">
-                  {mode === 'diff' ? `Visit ${frame === 0 ? 2 : frame + 1} − ${frame === 0 ? 1 : frame}` : `Visit ${frame + 1}/${nEpochs}`} · {formatMjdLong(fr.mjd)}
+                  {mode === 'diff' && manifest!.frames.length > 1
+                    ? (() => { const a = frame === 0 ? 1 : frame, b = a - 1; // same pair the Difference canvas subtracts
+                        return `Visit ${a + 1} − ${b + 1} · ${formatMjdLong(manifest!.frames[a].mjd)} − ${formatMjdLong(manifest!.frames[b].mjd)}`; })()
+                    : mode === 'side' ? `All ${nEpochs} visits side by side` : `Visit ${frame + 1}/${nEpochs} · ${formatMjdLong(fr.mjd)}`}
                 </span>
-                <span className="patch__scale"><i />1′</span>
+                {mode !== 'side' && <span className="patch__scale"><i />1′</span>}
               </span>
             )}
           </div>
@@ -1599,10 +1602,10 @@ export function SkyMap({ loc }: { loc: string }) {
                       : <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.2v11.6a.6.6 0 0 0 .9.5l9.2-5.8a.6.6 0 0 0 0-1L4.9 1.7a.6.6 0 0 0-.9.5Z" fill="currentColor" /></svg>}
                   </button>
                   <div className="seg" role="radiogroup" aria-label="View mode">
-                    {(['blink', 'diff'] as ViewMode[]).map((m) => (
+                    {(['blink', 'diff', 'side'] as ViewMode[]).map((m) => (
                       <button key={m} role="radio" aria-checked={mode === m} className={mode === m ? 'is-on' : ''} onClick={() => setMode(m)}
-                        disabled={m === 'diff' && nEpochs < 2} aria-label={MODES[m].label} title={`${MODES[m].help} (${m === 'blink' ? 'B' : 'D'})`}>
-                        {MODES[m].label}
+                        disabled={m !== 'blink' && nEpochs < 2} aria-label={MODES[m].label} title={`${MODES[m].help} (${m === 'blink' ? 'B' : m === 'diff' ? 'D' : 'S'})`}>
+                        {m === 'side' ? 'Side' : MODES[m].label}
                       </button>
                     ))}
                   </div>
