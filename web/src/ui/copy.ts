@@ -240,3 +240,9 @@ export const ABOUT = {
   si: 'Draft — team to confirm: parts of the code were written with an AI coding assistant and reviewed by the team. No AI-generated images or video are used; any added later will carry a visible watermark.',
   legal: 'Built for the NASA Space Apps Challenge 2026. Not an official NASA product. No NASA logos are used.',
 };
+
+/** Explainer film + short demo, hosted with the submission. */
+export const VIDEOS = [
+  { label: '▶ Watch the 2-minute explainer', href: 'https://spherex-blink-demo.vercel.app/#explainer' },
+  { label: '30-second demo', href: 'https://spherex-blink-demo.vercel.app/' },
+];

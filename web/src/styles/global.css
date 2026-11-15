@@ -293,6 +293,7 @@ kbd { font: 12px var(--mono); padding: 1px 5px; border: 1px solid var(--line); b
 /* ---- the patch (blink plays on the map) ---- */
 .patch { position: absolute; left: 0; top: 0; z-index: 2; border-radius: 4px; box-shadow: 0 0 0 1px rgba(255,255,255,.35), 0 0 0 5px rgba(86,180,233,.18), 0 18px 60px rgba(0,0,0,.6); background: #000; }
 .patch .blink-canvas { width: 100%; height: 100%; max-width: none; border-radius: 4px; }
+.patch--side .blink-canvas { object-fit: contain; } /* side-by-side strip keeps its shape inside the square patch */
 .patch--loading, .patch--idle { background: rgba(0,0,0,.35); }
 .patch__loading { position: absolute; inset: 0; border-radius: 4px; background: linear-gradient(110deg, rgba(86,180,233,.05) 30%, rgba(86,180,233,.22) 50%, rgba(86,180,233,.05) 70%); background-size: 250% 100%; animation: patch-shimmer 1.2s linear infinite; border: 1.5px dashed rgba(86,180,233,.7); }
 @keyframes patch-shimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
@@ -634,7 +635,8 @@ button.area-btn { cursor: pointer; font: inherit; font-size: 13px; }
 .selbox__c--tr { right: -2px; top: -2px; border-right-width: 3px; border-top-width: 3px; border-top-right-radius: 5px; }
 .selbox__c--bl { left: -2px; bottom: -2px; border-left-width: 3px; border-bottom-width: 3px; border-bottom-left-radius: 5px; }
 .selbox__c--br { right: -2px; bottom: -2px; border-right-width: 3px; border-bottom-width: 3px; border-bottom-right-radius: 5px; }
-.selbox__tag { position: absolute; left: 0; top: -30px; font-size: 11.5px; letter-spacing: .02em; white-space: nowrap; padding: 3px 10px; border-radius: 999px;
+/* inside the box's bottom edge: above it, the tag ran into the search bar */
+.selbox__tag { position: absolute; left: 8px; bottom: 8px; font-size: 11.5px; letter-spacing: .02em; white-space: nowrap; padding: 3px 10px; border-radius: 999px;
   color: var(--fg); background: rgba(11,13,18,.82); border: 1px solid color-mix(in srgb, var(--c) 55%, transparent); backdrop-filter: blur(6px); }
 .area-hint { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); margin: 0; padding: 9px 14px; border-radius: 10px; background: rgba(11,13,18,.88); border: 1px solid var(--accent); font-size: 14px; pointer-events: none; max-width: calc(100% - 32px); text-align: center; }
 .area-job { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 6; width: min(420px, calc(100% - 32px)); padding: 14px 40px 12px 16px; border-radius: 12px; background: rgba(18,21,28,.94); border: 1px solid var(--accent); box-shadow: 0 10px 40px rgba(0,0,0,.5); }
@@ -715,7 +717,7 @@ button.area-btn { cursor: pointer; font: inherit; font-size: 13px; }
 .s3d__view { position: absolute; inset: 0; }
 .s3d__card { position: absolute; top: 16px; left: 16px; width: min(360px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; padding: 14px 16px; border-radius: var(--radius); background: var(--glass); border: 1px solid var(--glass-line); box-shadow: var(--shadow); backdrop-filter: blur(10px); }
 .s3d__head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.s3d__head h3 { margin: 0; font-size: 1.05rem; }
+.s3d__head h3 { margin: 0; font-size: 1.05rem; text-transform: none; } /* uppercase turned ε Indi B into “E INDI B” */
 .s3d__label { margin: 6px 0 10px; color: var(--warn); font-size: var(--t-xs); font-weight: 600; }
 .s3d__params { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; font-size: var(--t-s); }
 .s3d__params dt { color: var(--fg-faint); }
@@ -726,3 +728,23 @@ button.area-btn { cursor: pointer; font: inherit; font-size: 13px; }
 .s3d__pm line { stroke: var(--mark); stroke-width: 2; }
 .s3d__pm circle, .s3d__pm path { fill: var(--mark); }
 .s3d__note { margin: 8px 0 0; color: var(--fg-dim); font-size: var(--t-xs); }
+
+/* explainer / demo video links (intro card + About) */
+.videolinks { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 12px 0 0; }
+.videolinks a { color: var(--accent); text-decoration: none; }
+.videolinks a:hover { text-decoration: underline; }
+
+/* ---------- phones + tablets: 44 px tap targets, 14 px text (desktop untouched) ---------- */
+@media (max-width: 820px) {
+  .msearch__go, .pcard .iconbtn, .pcard__x, .s3d .iconbtn, .toast__x, .mapctl__btn { min-width: 44px; min-height: 44px; }
+  .pcard .seg button, .pcard .morebtn, .area-btn, .detsw__btn, .s3dbtn, .pcard__chartbtn, .btn { min-height: 44px; }
+  .vtl__dot::before { inset: -16px; }
+  .foot-legend label, .detp__row, .detp__chips button { min-height: 44px; }
+  .pcard, .pcard .eyebrow, .pcard__label, .pcard .seg button, .pcard__range, .pcard li, .pcard__insight, .pcard .mono,
+  .detsw, .detp, .detp *, .s3dbtn, .area-btn, .foot-legend, .selbox__tag, .area-hint, .skymap__hint, .s3d__card, .s3d__card small, .sheet .small, .pcard .small { font-size: 14px; }
+  .skymap .area-btn.explore-link, .skymap--mobile .pcard__insight, .detsw__btn span { font-size: 14px; }
+  .skymap__credit, .skymap__credit .link { font-size: 12px; } /* legal credit line: 14 px would cover the map on a phone */
+  /* peek sheet stops at half the screen and scrolls, so the patch above it stays in view */
+  .skymap--mobile .cardstack:not(.cardstack--open) { max-height: 48dvh; overflow-y: auto; }
+  .s3d__card { max-height: 45dvh; } /* leaves the 3D model visible under the facts card */
+}

@@ -194,7 +194,7 @@ export function DetectionPanel({ list, pair, known, focus, onFocus, hasReport, m
           </ul>
         </>
       )}
-      <p className="detp__note">Change detection runs on every visit pair; moving-object linking and catalogue checks come from the discovery engine{hasReport ? '' : ' (not run for this patch)'}. Candidates, not discoveries.</p>
+      <p className="detp__note">Change detection runs on every visit pair; moving-object linking and catalogue checks come from the scan engine{hasReport ? '' : ' (not run for this patch)'}. Every result is a candidate until checked.</p>
     </div>
   );
 }
