@@ -2,7 +2,7 @@
 
 **Blink any patch of sky through NASA's SPHEREx survey and watch nearby stars, brown dwarfs and variables move and change.**
 
-**Live app: https://spherex.79-72-55-161.sslip.io/**
+**Live app: https://spherex.169-58-49-49.sslip.io/**
 
 NASA Space Apps Challenge 2026 · [Planet X and SPHEREx](https://www.spaceappschallenge.org/2026/challenges/planet-x-and-spherex/)
 
