@@ -13,3 +13,4 @@ fastapi
 uvicorn[standard]
 mcp>=2
 truststore   # only needed on networks that inspect HTTPS (e.g. IE Wi-Fi)
+scikit-learn==1.9.1   # must match the version that saved models/spherex-triage.joblib

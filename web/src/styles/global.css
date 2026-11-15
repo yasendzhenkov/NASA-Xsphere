@@ -693,6 +693,10 @@ button.area-btn { cursor: pointer; font: inherit; font-size: 13px; }
 .detp__txt b { font-size: 12.5px; font-weight: 600; }
 .detp__txt small { font-size: 11px; color: var(--fg-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .detp__val { font-size: 12px; color: var(--k); font-variant-numeric: tabular-nums; }
+.detp__ml { color: var(--fg-dim); opacity: .85; font-style: italic; }
+.detp__sort { font: inherit; font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,.14); background: none; color: var(--fg-dim); cursor: pointer; }
+.detp__sort.is-on { color: var(--fg); background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.3); }
+.detp__about { cursor: help; text-decoration: underline dotted; }
 .detp__empty, .detp__note { margin: 0; font-size: 11.5px; color: var(--fg-dim); }
 .detp__note { opacity: .75; line-height: 1.45; }
 

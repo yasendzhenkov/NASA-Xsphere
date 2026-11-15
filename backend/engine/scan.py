@@ -4,7 +4,7 @@
 import json, math, traceback
 import astropy.units as u
 from astropy.coordinates import SkyCoord
-from . import inventory, pipeline
+from . import inventory, ml, pipeline
 
 def run_scan(job, ra, dec, w_arcmin, h_arcmin, band, per_epoch, classify=True):
     from . import jobs
@@ -27,6 +27,7 @@ def run_scan(job, ra, dec, w_arcmin, h_arcmin, band, per_epoch, classify=True):
         if not classify:   # photos only: done as soon as the blink bundle exists
             job.update(status='done', progress=1.0, report=None); jobs._save(job); return
         report = json.loads(json.dumps(discover(z['stacks_dir'], log=jobs._log(job)), default=float))
+        ml.annotate(report)   # second opinion from the trained triage model; rule-based class unchanged
         report.update(photos_used=z['n_exposures'], photos_available=len(rows), bundle=job.get('bundle'))
         (out / 'report.json').write_text(json.dumps(report, indent=1))
         job.update(status='done', progress=1.0, report=report, report_url=f"/live/{job['key']}/report.json")

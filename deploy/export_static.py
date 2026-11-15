@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'backend'))
 from fastapi import HTTPException          # noqa: E402
-from engine import api                     # noqa: E402
+from engine import api, ml                 # noqa: E402
 
 OUT = ROOT / 'web' / 'dist' / 'bundles'
 
@@ -32,6 +32,9 @@ for e in idx:
         for f in src.iterdir():
             if f.suffix in ('.f32', '.png'):
                 shutil.copy2(f, OUT / bid / band / f.name)
+    rp = api.REPORTS / f'{bid}.json'
+    if rp.exists():   # the same report the engine serves at /reports/<id>.json, plus the triage model's second opinion
+        put(f'../reports/{bid}.json', ml.annotate(json.loads(rp.read_text())))
     print(bid, e['bands'])
 explore = ROOT / 'web' / 'app'
 shutil.copytree(explore, OUT.parent / 'explore', dirs_exist_ok=True)   # page only; its API calls go to the engine

@@ -1,0 +1,147 @@
+{
+ "n_sources": 9427,
+ "n_zones": 43,
+ "zones": [
+  "A000",
+  "A100",
+  "A101",
+  "A102",
+  "A103",
+  "A104",
+  "A105",
+  "A106",
+  "A107",
+  "A108",
+  "A109",
+  "A110",
+  "A111",
+  "A112",
+  "A113",
+  "A114",
+  "A115",
+  "A116",
+  "A117",
+  "A118",
+  "A119",
+  "A160",
+  "A161",
+  "A162",
+  "A163",
+  "A164",
+  "A165",
+  "A166",
+  "A167",
+  "A168",
+  "A169",
+  "A170",
+  "A171",
+  "A172",
+  "A173",
+  "A174",
+  "A175",
+  "A176",
+  "A177",
+  "A178",
+  "A179",
+  "A180",
+  "A181"
+ ],
+ "test": "GroupKFold by zone (held-out sky)",
+ "label_counts": {
+  "star": 2916,
+  "ir-only": 316,
+  "asteroid": 0,
+  "unmatched": 6195
+ },
+ "accuracy": 0.931,
+ "balanced_accuracy": 0.682,
+ "baseline_always_majority": {
+  "cls": "unmatched",
+  "accuracy": 0.657,
+  "balanced_accuracy": 0.333
+ },
+ "per_class": {
+  "star": {
+   "precision": 0.8630731102850062,
+   "recall": 0.9554183813443072,
+   "f1-score": 0.9069010416666666,
+   "support": 2916.0
+  },
+  "ir-only": {
+   "precision": 0.22905027932960895,
+   "recall": 0.12974683544303797,
+   "f1-score": 0.16565656565656567,
+   "support": 316.0
+  },
+  "unmatched": {
+   "precision": 0.9877076411960133,
+   "recall": 0.9598062953995158,
+   "f1-score": 0.9735571019238641,
+   "support": 6195.0
+  },
+  "accuracy": 0.9306248011032142,
+  "macro avg": {
+   "precision": 0.6932770102702094,
+   "recall": 0.6816571707289536,
+   "f1-score": 0.6820382364156988,
+   "support": 9427.0
+  },
+  "weighted avg": {
+   "precision": 0.9237243996041727,
+   "recall": 0.9306248011032142,
+   "f1-score": 0.9258573415366302,
+   "support": 9427.0
+  }
+ },
+ "confusion": {
+  "labels": [
+   "star",
+   "ir-only",
+   "unmatched"
+  ],
+  "matrix": [
+   [
+    2786,
+    95,
+    35
+   ],
+   [
+    236,
+    41,
+    39
+   ],
+   [
+    206,
+    43,
+    5946
+   ]
+  ]
+ },
+ "features": [
+  "logflux_D4",
+  "logflux_D5",
+  "logflux_D6",
+  "change_D4",
+  "change_D5",
+  "change_D6",
+  "nvalid_D4",
+  "nvalid_D5",
+  "nvalid_D6",
+  "colour_45",
+  "colour_56",
+  "speed_arcsec_yr",
+  "motion_sig",
+  "fit_rms_px",
+  "n_visits",
+  "single_visit",
+  "saturated"
+ ],
+ "novelty": {
+  "top5pct_unmatched_share": 1.0,
+  "base_unmatched_share": 0.657
+ },
+ "showcase": {
+  "n": 210,
+  "accuracy": 0.924
+ }
+}

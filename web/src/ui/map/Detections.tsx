@@ -6,6 +6,7 @@
  *    fitted track and speed, variables and unexplained candidates. Known static stars are only counted.
  * Everything is a "candidate" until checked (D13).
  */
+import { useState } from 'react';
 import type { Manifest, Wcs } from '../lib/contracts';
 import { skyToPixel } from '../lib/astro';
 
@@ -13,11 +14,14 @@ export interface ChangeCand { x: number; y: number; sigma: number; npix: number;
 interface ReportPos { visit: number; ra_deg: number; dec_deg: number }
 export interface ReportSource {
   id: string; class: string; confidence: number; reason: string;
-  motion?: { speed_arcsec_yr: number; direction?: string; sig: number } | null;
+  motion?: { speed_arcsec_yr: number; direction?: string; sig: number; n_visits?: number } | null;
   positions?: ReportPos[]; ra_deg?: number; dec_deg?: number;
   crossmatch?: { cat: string; id: string }[];
+  // trained triage model (backend/engine/ml.py): a second opinion, never replaces `class`
+  ml_class?: string; ml_confidence?: number; ml_oddness?: number; ml_oddness_top_pct?: number;
 }
-export interface Report { sources: ReportSource[]; summary?: Record<string, number> }
+export interface ModelInfo { n_sources: number; n_zones: number; accuracy: number; baseline_accuracy: number; baseline_class: string }
+export interface Report { sources: ReportSource[]; summary?: Record<string, number>; ml?: ModelInfo }
 
 export interface Detection {
   id: string;
@@ -29,6 +33,8 @@ export interface Detection {
   r: number;              // marker half-size in pixels
   from?: [number, number];        // moved: where it was
   track?: [number, number][];     // mover: fitted positions per visit
+  ml?: string;                    // "Model: star · 97 % · oddness top 3 %"
+  odd?: number;                   // model oddness, only for objects seen on 2+ visits ("Check first" sort)
 }
 
 const KIND_LABEL: Record<Detection['kind'], string> = {
@@ -98,6 +104,8 @@ export function buildDetections(m: Manifest, report: Report | null, frame: numbe
       value: mover ? `${s.motion!.speed_arcsec_yr.toFixed(1)}″/yr` : `${Math.round(s.confidence * 100)}%`,
       sub: `${name} · ${s.class.replace('-', ' ')}`,
       x: here[0], y: here[1], r: 3.2, track: mover && ps.length > 1 ? ps : undefined,
+      ml: s.ml_class ? `Model: ${s.ml_class} · ${Math.round((s.ml_confidence ?? 0) * 100)} % · oddness top ${s.ml_oddness_top_pct} %` : undefined,
+      odd: s.ml_oddness != null && (s.motion?.n_visits ?? 1) >= 2 ? s.ml_oddness : undefined,
     });
   }
   // one object, one box: a change-engine "shifted" pair on top of a linked mover is the same star seen twice
@@ -139,15 +147,29 @@ export function DetectionOverlay({ list, nx, ny, focus, targetPx }: { list: Dete
 }
 
 /** Compact professional list for the card. */
-export function DetectionPanel({ list, pair, known, focus, onFocus, hasReport }: {
-  list: Detection[]; pair: [number, number]; known: number; focus: string | null; onFocus: (id: string | null) => void; hasReport: boolean;
+const pct = (x: number) => `${(x * 100).toFixed(1)} %`;
+function aboutModel(m?: ModelInfo) {
+  return 'About the model: a second opinion next to the rule-based class, not instead of it.'
+    + (m ? ` Trained on ${m.n_sources.toLocaleString('en')} catalogue-labelled SPHEREx objects in ${m.n_zones} zones; ${pct(m.accuracy)} accuracy on held-out sky vs ${pct(m.baseline_accuracy)} baseline (always guessing "${m.baseline_class}").` : '')
+    + ' Oddness = how unlike catalogued objects it looks, ranked within this zone. Unusual means worth checking first: still a candidate.';
+}
+
+export function DetectionPanel({ list, pair, known, focus, onFocus, hasReport, model }: {
+  list: Detection[]; pair: [number, number]; known: number; focus: string | null; onFocus: (id: string | null) => void; hasReport: boolean; model?: ModelInfo;
 }) {
+  const [checkFirst, setCheckFirst] = useState(false);
+  const hasMl = list.some((d) => d.ml);
+  // Check first: oddest (by the model) among objects seen on 2+ visits, then everything else in its usual order
+  const shown = checkFirst ? [...list].sort((a, b) => (b.odd ?? -Infinity) - (a.odd ?? -Infinity)) : list;
   const counts = list.reduce<Record<string, number>>((a, d) => { a[d.kind] = (a[d.kind] ?? 0) + 1; return a; }, {});
   return (
     <div className="detp">
       <div className="detp__meta mono">
         <span>Visit {pair[0] + 1} → {pair[1] + 1}</span><span>threshold 5σ</span>
         {hasReport && known > 0 && <span>{known} known stars matched</span>}
+        {hasMl && <button className={`detp__sort ${checkFirst ? 'is-on' : ''}`} aria-pressed={checkFirst} onClick={() => setCheckFirst((v) => !v)}
+          title="Sort by the model's oddness among objects seen on 2 or more visits">Check first</button>}
+        {hasMl && <span className="detp__about" tabIndex={0} title={aboutModel(model)} aria-label={aboutModel(model)}>About the model ⓘ</span>}
       </div>
       {list.length === 0 ? (
         <p className="detp__empty">No significant change between these visits.</p>
@@ -159,12 +181,12 @@ export function DetectionPanel({ list, pair, known, focus, onFocus, hasReport }:
             ))}
           </div>
           <ul className="detp__list" onMouseLeave={() => onFocus(null)}>
-            {list.slice(0, 40).map((d) => (
+            {shown.slice(0, 40).map((d) => (
               <li key={d.id}>
                 <button className={`detp__row det--${d.kind} ${focus === d.id ? 'is-focus' : ''}`}
                   onMouseEnter={() => onFocus(d.id)} onFocus={() => onFocus(d.id)} onClick={() => onFocus(focus === d.id ? null : d.id)}>
                   <i className="detp__sw" />
-                  <span className="detp__txt"><b>{d.title}</b><small>{d.sub}</small></span>
+                  <span className="detp__txt"><b>{d.title}</b><small>{d.sub}</small>{d.ml && <small className="detp__ml">{d.ml}</small>}</span>
                   <span className="detp__val mono">{d.value}</span>
                 </button>
               </li>

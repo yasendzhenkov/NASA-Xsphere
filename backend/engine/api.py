@@ -228,7 +228,10 @@ def b_report(bid: str):
     p = (_bundle_dir(bid) / 'report.json') if bid.startswith('live-') else REPORTS / f'{bid}.json'
     if not p.exists():
         raise HTTPException(404, dict(error='not-found', message='No scan report for this object yet.'))
-    return FileResponse(p)
+    if bid.startswith('live-'):
+        return FileResponse(p)   # live scans are annotated when they finish (scan.py)
+    from . import ml
+    return ml.annotate(json.loads(p.read_text()))   # pre-built reports: add the model's second opinion on the fly
 
 # results: live bundles + reports (engine cache) and the pre-built bundles (processing) — same C4 format
 (config.CACHE / 'live').mkdir(parents=True, exist_ok=True)

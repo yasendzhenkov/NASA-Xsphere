@@ -127,14 +127,15 @@ def query_catalog(name, ra, dec, radius_deg):
     if old.exists():
         return json.loads(old.read_text()), "IRSA"
     tries = [("IRSA", lambda: _irsa(q)), ("VizieR (Harvard mirror)", lambda: _vizier(name, ra, dec, radius_deg)),
-             ("VizieR (Harvard mirror)", lambda: _vizier(name, ra, dec, radius_deg))]   # twice: the mirror sometimes fails once
+             ("VizieR (Harvard mirror)", lambda: time.sleep(3) or _vizier(name, ra, dec, radius_deg)),
+             ("VizieR (Harvard mirror)", lambda: time.sleep(10) or _vizier(name, ra, dec, radius_deg))]   # 3x: the mirror blips: the mirror sometimes fails once
     if name == "Gaia DR3":
         tries.append(("ESA Gaia archive", lambda: _esa_gaia(q)))
 
     def run():
         for src, fn in tries:
             try:
-                return {"rows": _try(src, fn), "source": src}
+                return {"rows": (fn() if src.startswith("VizieR") else _try(src, fn)), "source": src}
             except Exception:
                 continue
         return None

@@ -47,13 +47,15 @@ def _http(path, body=None):
 
 def run(timeout_s=1800):
     rep = OUT / 'reports'; rep.mkdir(parents=True, exist_ok=True)
-    for z in csv.DictReader(ZONES.open()):
+    zs = list(csv.DictReader(ZONES.open()))
+    for z in (zs[::-1] if os.environ.get('REVERSE') else zs):  # REVERSE=1: a 2nd worker from the other end
         dst, err = rep / f"{z['id']}.json", rep / f"{z['id']}.error.json"
         if dst.exists() or err.exists():
             continue
         t0 = time.time(); s = float(z['size'])
         try:
-            key = _http('/scan', dict(box=dict(ra_deg=float(z['ra']), dec_deg=float(z['dec']), w_arcmin=s, h_arcmin=s)))['job']
+            key = _http('/scan', dict(box=dict(ra_deg=float(z['ra']), dec_deg=float(z['dec']), w_arcmin=s, h_arcmin=s),
+                                    per_epoch=int(os.environ.get('PER_EPOCH', 6))))['job']  # fewer photos per visit = faster
             while True:
                 time.sleep(5)
                 j = _http(f'/scan/{key}')
@@ -80,7 +82,7 @@ def table():
                        speed_arcsec_yr=m.get('speed_arcsec_yr'), pm_sig=m.get('sig'), fit_rms_px=m.get('fit_rms_px'),
                        flags='|'.join(map(str, s.get('flags') or [])))
             row.update({f'flux_{b}': v for b, v in (s.get('flux') or {}).items()})
-            row.update(label_catalogues='|'.join(c.get('catalog', '?') if isinstance(c, dict) else str(c)
+            row.update(label_catalogues='|'.join(c.get('cat', '?') if isinstance(c, dict) else str(c)
                                                  for c in s.get('crossmatch') or []),
                        label_rule_class=s.get('class'), label_appearance=s.get('appearance_class'),
                        spectrum=json.dumps(s.get('spectrum')), light_curve=json.dumps(s.get('light_curve')))

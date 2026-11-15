@@ -1589,7 +1589,7 @@ export function SkyMap({ loc }: { loc: string }) {
                     <span>Detections</span>
                     <i className="detsw__track"><i /></i>
                   </button>
-                  {detOn && det && <DetectionPanel list={det.list} pair={det.pair} known={det.known} focus={detFocus} onFocus={setDetFocus} hasReport={Boolean(report)} />}
+                  {detOn && det && <DetectionPanel list={det.list} pair={det.pair} known={det.known} focus={detFocus} onFocus={setDetFocus} hasReport={Boolean(report)} model={report?.ml} />}
                 </div>
 
                 {insight && (

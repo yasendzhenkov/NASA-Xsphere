@@ -58,7 +58,27 @@ def _read_section(exp, center, half):
     if f.exists():
         z = np.load(f, allow_pickle=False)
         return {k: z[k] for k in z.files} | {"hdr": fits.Header.fromstring(str(z["hdr_str"]))}
-    for attempt in range(4):
+    out = None
+    try:   # fast path: only the bytes of the cut (processing/rowread.py), same arrays; astropy below is the fallback
+        from . import rowread
+        H = rowread.hdus(exp["url"], {"IMAGE", "FLAGS", "VARIANCE", "ZODI"})
+        hdr = H["IMAGE"][0]
+        x, y = WCS(hdr).world_to_pixel(center)
+        xi, yi = int(round(float(x))), int(round(float(y)))
+        ny, nx = hdr["NAXIS2"], hdr["NAXIS1"]
+        x0, x1 = max(xi - half, 0), min(xi + half + 1, nx)
+        y0, y1 = max(yi - half, 0), min(yi + half + 1, ny)
+        if x1 - x0 < 8 or y1 - y0 < 8:
+            return None
+        r, _ = rowread.read(exp["url"], y0, y1, x0, x1, H=H)
+        out = {"img": r["IMAGE"].astype(np.float32), "flg": r["FLAGS"].astype(np.int64),
+               "var": r["VARIANCE"].astype(np.float32), "zodi": r["ZODI"].astype(np.float32),
+               "x0": np.int32(x0), "y0": np.int32(y0)}
+    except FileNotFoundError:
+        raise
+    except Exception:
+        out = None
+    for attempt in range(0 if out is not None else 4):
         try:
             with fits.open(exp["url"], use_fsspec=True, fsspec_kwargs={"block_size": 512_000}) as h:
                 hdr = h["IMAGE"].header
