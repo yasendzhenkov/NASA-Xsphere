@@ -24,6 +24,7 @@ import { SpectrumPanel } from '../ui/components/SpectrumPanel';
 import { CandidatePanel, SharePanel } from '../ui/components/SharePanel';
 import { BANDS, COLOUR_STOPS, HINTS, KIND_LABEL, MODES, STATES, TARGET_COPY, TOUR_END } from '../ui/copy';
 import { IntroCard } from '../ui/map/IntroCard';
+import { OnboardingTour } from '../ui/tour/OnboardingTour';
 import { AboutSheet } from '../ui/map/AboutSheet';
 import { MiniChart } from '../ui/map/MiniChart';
 import { VisitTimeline } from '../ui/map/VisitTimeline';
@@ -1426,7 +1427,10 @@ export function SkyMap({ loc }: { loc: string }) {
       {/* ---------- overlay UI ---------- */}
       <div className="skymap__top" ref={topRef}>
         {catalog?.mock && <MockBanner compact={demo} />}
-        <MapSearch ref={searchRef} catalog={catalog} onHit={onSearch} />
+        <div className="tourrow">
+          <MapSearch ref={searchRef} catalog={catalog} onHit={onSearch} />
+          <OnboardingTour mobile={mobile} />
+        </div>
         {/* live engine (backend/): drag a box anywhere → its SPHEREx photos open in the same popup as the targets */}
         <button className={`explore-link area-btn ${areaMode ? 'area-btn--on' : ''}`} aria-pressed={areaMode}
           onClick={() => (areaMode ? setAreaMode(false) : startAreaMode())}>
