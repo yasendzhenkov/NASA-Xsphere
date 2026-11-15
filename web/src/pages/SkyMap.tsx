@@ -45,6 +45,8 @@ const TOUR_ORDER = ['barnards-star', 'wise-0855', 'eps-indi-b', 'rw-aurigae', 'r
 const INTRO_KEY = 'sxb-intro-seen';
 /** Zoom levels where the UI changes (open/close patch, imagery load, "whole sky" button); see the constants above. */
 const FOV_STEPS = [1.0, 1.5, 3, 45, 60, 360];
+/** Okabe–Ito, one colour per visit (colour-blind safe). */
+const FOOT_COLORS = ['#E69F00', '#56B4E9', '#009E73', '#F0E442', '#0072B2', '#D55E00', '#CC79A7'];
 
 /** localStorage can throw (private mode, blocked storage) — never let that break the page. */
 function introSeen() {
@@ -167,6 +169,13 @@ export function SkyMap({ loc }: { loc: string }) {
   /** The chosen area stays drawn on the sky (glued to it while the map moves) until its photos open. */
   const pendingArea = useRef<{ ra: number; dec: number; w: number; h: number } | null>(null);
   const pendingEl = useRef<HTMLDivElement>(null);
+  /** Outlines of the SPHEREx photos that cover the chosen area (from the scan job), drawn as a grid on the sky. */
+  type Foot = { visit: number; corners: [number, number][] };
+  const footRef = useRef<{ id: string; list: Foot[]; zone: { ra: number; dec: number; w: number; h: number } } | null>(null);
+  const [footLegend, setFootLegend] = useState<{ visit: number; date: string; n: number }[] | null>(null);
+  const [footOn, setFootOn] = useState(true);
+  const footOnRef = useRef(true);
+  footOnRef.current = footOn;
   const [emptyDismissed, setEmptyDismissed] = useState(false);
   useEffect(() => { setEmptyDismissed(false); }, [selectedId]);
 
@@ -541,6 +550,27 @@ export function SkyMap({ loc }: { loc: string }) {
         const tctx = tc.getContext('2d')!;
         tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         tctx.clearRect(0, 0, W, H);
+        const fp = footRef.current;
+        if (fp && footOnRef.current) {
+          // thin, faint outlines: where many photos overlap the grid builds up brighter
+          tctx.lineWidth = 1;
+          for (const f of fp.list) {
+            const pts = f.corners.map(([ra, dec]) => P.project(ra, dec));
+            if (pts.some((q) => q.cosc <= 0)) continue;
+            tctx.strokeStyle = FOOT_COLORS[f.visit % FOOT_COLORS.length] + '59';
+            tctx.beginPath();
+            pts.forEach((q, i) => (i ? tctx.lineTo(q.x, q.y) : tctx.moveTo(q.x, q.y)));
+            tctx.closePath();
+            tctx.stroke();
+          }
+          const z = fp.zone, q = P.project(z.ra, z.dec);
+          if (q.cosc > 0) {
+            const w = Math.max(6, (z.w / 60) * D2R * q.k), h = Math.max(6, (z.h / 60) * D2R * q.k);
+            tctx.strokeStyle = '#fff';
+            tctx.lineWidth = 1.5;
+            tctx.strokeRect(q.x - w / 2, q.y - h / 2, w, h);
+          }
+        }
         const trail = trailRef.current;
         if (trail && pi && patchRef.current && cam.fov <= CLOSE_FOV && trail.length > 1) {
           const c0 = P.project(pi.ra, pi.dec);
@@ -907,6 +937,8 @@ export function SkyMap({ loc }: { loc: string }) {
   }, [patchOpen, meta]);
 
   useEffect(() => { dirtyRef.current = true; }, [patchOpen, load, selectedId, areaJob]);
+  // the photo grid belongs to one area: opening another target removes it
+  useEffect(() => { if (selectedId && footRef.current && selectedId !== footRef.current.id) { footRef.current = null; setFootLegend(null); } }, [selectedId]);
 
   // trail of archival positions (oldest → SPHEREx position) for the "then vs now" overlay
   useEffect(() => {
@@ -1046,7 +1078,7 @@ export function SkyMap({ loc }: { loc: string }) {
   const startAreaMode = useCallback(() => {
     setHint(false); setNotice(null); dismissIntro(); setTourEnd(false); setTour(false);
     if (selectedId) closePatch(false);
-    areaRun.current++; pendingArea.current = null; setAreaJob(null); setAreaRect(null); setAreaMode(true);   // a new box replaces any area still loading
+    areaRun.current++; pendingArea.current = null; footRef.current = null; setFootLegend(null); setAreaJob(null); setAreaRect(null); setAreaMode(true);   // a new box replaces any area still loading
     // a box drawn on the whole-sky view would be far too big: get close enough first
     if (camRef.current.fov > 2) flyTo({ ...camRef.current, fov: 1.2 });
   }, [selectedId, closePatch, flyTo, dismissIntro]);
@@ -1073,6 +1105,12 @@ export function SkyMap({ loc }: { loc: string }) {
         const j = await (await fetch(`/scan/${key}`)).json();
         // engine messages are "code: plain sentence (raw upstream error)": show only the sentence
         if (j.status === 'error') throw new Error(String(j.message || 'The area could not be processed.').replace(/^[a-z-]+:\s*/, '').replace(/\s*\(.*$/s, ''));
+        if (j.footprints?.length && footRef.current?.id !== `live-${key}`) {
+          footRef.current = { id: `live-${key}`, list: j.footprints, zone: a };
+          setFootLegend((j.visits ?? []).map((v: { id: number; start: string; n: Record<string, number> }) => ({
+            visit: v.id, date: v.start.slice(0, 7), n: Object.values(v.n).reduce((x, y) => x + y, 0) })));
+          dirtyRef.current = true;
+        }
         if (j.bundle || j.status === 'done') break;   // photos are ready; object checks may still be running
         setAreaJob({ title: STATUS[j.status] ?? 'Working…', progress: Math.max(0.02, j.progress ?? 0),
           detail: [label, j.n_photos_total ? `${j.n_photos_total} photos found` : '',
@@ -1356,6 +1394,14 @@ export function SkyMap({ loc }: { loc: string }) {
             </div>
           )}
           {!areaRect && <p className="area-hint">Drag a box on the sky (up to 30′ wide) · scroll to zoom · Esc or the button above to cancel</p>}
+        </div>
+      )}
+      {footLegend && (
+        <div className="foot-legend small">
+          <label><input type="checkbox" checked={footOn} onChange={(e) => { setFootOn(e.target.checked); dirtyRef.current = true; }} /> Show photo footprints</label>
+          {footOn && <p className="mono">{footLegend.map((v) => (
+            <span key={v.visit} style={{ color: FOOT_COLORS[v.visit % FOOT_COLORS.length] }}>Visit {v.visit + 1} · {v.date} · {v.n} photos</span>
+          ))}</p>}
         </div>
       )}
       {areaJob && (
