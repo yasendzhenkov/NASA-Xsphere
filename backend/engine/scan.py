@@ -17,6 +17,11 @@ def run_scan(job, ra, dec, w_arcmin, h_arcmin, band, per_epoch, classify=True):
             raise RuntimeError('outside-coverage: SPHEREx has no photos of this zone yet')
         nx = max(32, int(math.ceil(max(w_arcmin, h_arcmin) * 60 / pipeline.STACK_PIX)))
         job.update(status='fetching', progress=0.08, n_photos_total=len(rows), visits=inventory.summary(rows))
+        try:   # outlines of the photos for the map grid; extra, so it never stops a scan
+            from . import s3index
+            job.update(footprints=s3index.footprints(rows))
+        except Exception:
+            pass
         t = pipeline.field_target(ra, dec, name=f'Zone {ra:.3f} {dec:+.3f}')
         out = jobs.LIVE / job['key']
         z = pipeline.build_zone(t, rows, SkyCoord(ra * u.deg, dec * u.deg), out, nx, per_epoch, log=jobs._log(job))

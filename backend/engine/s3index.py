@@ -203,6 +203,35 @@ def query(ra, dec, radius_deg=0.0003):
     return rows
 
 
+def footprints(rows, limit=1000):
+    """Sky outline of every exposure in `rows` (all three D1-D3 detectors, i.e. the whole 3.5° x 11.3° shot; D4-D6
+    see the same sky), from each photo's header WCS: pixel corners -> CD -> inverse gnomonic. SIP ignored (< 2 px)."""
+    if not rows or not available():
+        return []
+    import datetime
+    m = _load()
+    visit = {r['obs_id']: r.get('visit', 0) for r in rows}
+    idx = np.nonzero(np.isin(m['obs'], np.array(sorted(visit), dtype='S24')) & (m['det'] <= 3))[0]
+    if len(idx) > limit:   # keep the grid readable and the job JSON small
+        idx = idx[np.linspace(0, len(idx) - 1, limit).astype(int)]
+    h = m['h'][idx]
+    out = []
+    for i, hh in zip(idx, h):
+        a0, d0 = np.radians(hh[0]), np.radians(hh[1])
+        cs = []
+        for px, py in ((0.5, 0.5), (NPX + 0.5, 0.5), (NPX + 0.5, NPX + 0.5), (0.5, NPX + 0.5)):
+            dx, dy = px - hh[2], py - hh[3]
+            xi, eta = np.radians(hh[4] * dx + hh[5] * dy), np.radians(hh[6] * dx + hh[7] * dy)
+            den = np.cos(d0) - eta * np.sin(d0)
+            ra = np.degrees(a0 + np.arctan2(xi, den)) % 360
+            dec = np.degrees(np.arctan2(np.sin(d0) + eta * np.cos(d0), np.hypot(xi, den)))
+            cs.append([round(float(ra), 4), round(float(dec), 4)])
+        o = m['obs'][i].decode()
+        out.append(dict(visit=visit[o], detector=int(m['det'][i]), corners=cs,
+                        date=(datetime.datetime(1858, 11, 17) + datetime.timedelta(days=float(hh[8]))).date().isoformat()))
+    return out
+
+
 if __name__ == '__main__':
     if sys.argv[1:2] == ['build']:
         build()
