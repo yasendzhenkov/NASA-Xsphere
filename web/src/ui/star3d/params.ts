@@ -48,7 +48,7 @@ export function starParams(s: Src, meta: { plx_mas?: number | null; pmra_masyr?:
     teffHow = `estimated from Gaia BP−RP ${gaia.bp_rp.toFixed(2)} (dwarf colour sequence)`;
   } else if (bd && wise && interp(W12, wise.w1mpro! - wise.w2mpro!, 1) != null) {
     teff = interp(W12, wise.w1mpro! - wise.w2mpro!, 1);
-    teffHow = `estimated from ${wise.cat} W1−W2 ${(wise.w1mpro! - wise.w2mpro!).toFixed(2)}`;
+    teffHow = `estimated from ${wise.cat} W1−W2 ${(wise.w1mpro! - wise.w2mpro!).toFixed(2)}` + (teff! < 500 ? ' · W1 is near its detection limit for objects this cold, so treat this as an upper estimate' : '');
   }
 
   const plx = gaia && ok(gaia.parallax) && gaia.parallax > 0 ? gaia.parallax : ok(meta.plx_mas) && meta.plx_mas > 0 ? meta.plx_mas : null;
