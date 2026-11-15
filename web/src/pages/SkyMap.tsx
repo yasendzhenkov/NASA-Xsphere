@@ -8,7 +8,7 @@
  *   > 3° (user)    patch closes, blink stops, back to the map
  *   ≤ 1° & empty   "Not processed yet"
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BandId, FlagsJson, GaiaJson, Manifest, SpectrumJson, TargetMeta, ViewMode } from '../ui/lib/contracts';
 import { BlinkCanvas } from '../ui/viewer';
 import { useCatalog } from '../ui/lib/useCatalog';
@@ -28,6 +28,7 @@ import { AboutSheet } from '../ui/map/AboutSheet';
 import { MiniChart } from '../ui/map/MiniChart';
 import { VisitTimeline } from '../ui/map/VisitTimeline';
 import { DetectionOverlay, DetectionPanel, buildDetections, type Report } from '../ui/map/Detections';
+import { canShow3D, starParams, targetSource } from '../ui/star3d/params';
 import { MarkerLegend, MarkerOverlay, trackMoves } from '../ui/map/Markers';
 import { MapSearch, type SearchHit } from '../ui/map/MapSearch';
 import { drawSky } from '../ui/map/renderSky';
@@ -35,6 +36,9 @@ import { HIPS_CREDIT, loadAladin, pickHips } from '../ui/map/aladin';
 import {
   D2R, angDist, clampFov, fitCamera, fovRamp, makeProjector, setViewport, slerp, type Camera,
 } from '../ui/map/sphere';
+
+// three.js lives in this chunk only: the map does not pay for it until someone opens the 3D view
+const Star3D = lazy(() => import('../ui/star3d/Star3D'));
 
 const OPEN_FOV = 1.5;
 const CLOSE_FOV = 3;
@@ -166,6 +170,8 @@ export function SkyMap({ loc }: { loc: string }) {
   const [detOn, setDetOn] = useState(false);
   const [detFocus, setDetFocus] = useState<string | null>(null);
   const [report, setReport] = useState<Report | null>(null);
+  const [s3d, setS3d] = useState(false);
+  const closeS3d = useCallback(() => setS3d(false), []);
   /** The chosen area stays drawn on the sky (glued to it while the map moves) until its photos open. */
   const pendingArea = useRef<{ ra: number; dec: number; w: number; h: number } | null>(null);
   const pendingEl = useRef<HTMLDivElement>(null);
@@ -929,7 +935,7 @@ export function SkyMap({ loc }: { loc: string }) {
     if (!patchOpen || !meta) return;
     let alive = true;
     loadSpectrum(meta.id).then((s) => alive && setSpectrum(s));
-    setReport(null); setDetFocus(null);
+    setReport(null); setDetFocus(null); setS3d(false);
     fetch(`/reports/${meta.id}.json`).then((r) => (r.ok ? r.json() : null)).then((r) => alive && setReport(r)).catch(() => { /* no report for this patch */ });
     loadGaia(meta.id).then((g) => alive && setGaia(g));
     loadFlags().then((f) => alive && setFlags(f));
@@ -1163,6 +1169,10 @@ export function SkyMap({ loc }: { loc: string }) {
   const areaLive = areaRect ? areaFromRect(areaRect) : null;
 
   // ---------- derived copy ----------
+  const s3dParams = useMemo(() => {
+    const ts = targetSource(report?.sources);
+    return meta && ts && canShow3D(meta.id, ts) ? starParams(ts, meta) : null;
+  }, [report, meta]);
   const det = useMemo(() => (detOn && manifest ? buildDetections(manifest, report, frame) : null), [detOn, manifest, report, frame]);
   const nEpochs = manifest?.frames.length ?? 0;
   const fr = manifest?.frames[frame];
@@ -1637,6 +1647,20 @@ export function SkyMap({ loc }: { loc: string }) {
                   </button>
                   {detOn && det && <DetectionPanel list={det.list} pair={det.pair} known={det.known} focus={detFocus} onFocus={setDetFocus} hasReport={Boolean(report)} model={report?.ml} />}
                 </div>
+
+                {s3dParams && (
+                    <>
+                      <button className="s3dbtn" onClick={() => setS3d(true)} title="Artist's impression from the measured temperature, size, distance and motion">
+                        <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="2" /><ellipse cx="12" cy="12" rx="8" ry="3" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
+                        View in 3D
+                      </button>
+                      {s3d && (
+                        <Suspense fallback={<p className="pcard__status" role="status"><span className="spinner" aria-hidden="true" /> Loading 3D…</p>}>
+                          <Star3D name={meta.name} p={s3dParams} onClose={closeS3d} />
+                        </Suspense>
+                      )}
+                    </>
+                )}
 
                 {insight && (
                   <p className={`pcard__insight pcard__insight--${insight.kind}`}>

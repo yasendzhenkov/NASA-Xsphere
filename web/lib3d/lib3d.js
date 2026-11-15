@@ -89,6 +89,7 @@ function rock(seed = 1) {   // irregular asteroid / comet nucleus: displaced ico
 
 function body(cls, p) {
   const T = p.temp_K ?? DEFAULTS[cls]?.temp_K ?? 5000; const color = kelvinRGB(T);
+  if (cls === 'brown-dwarf') color.multiplyScalar(.45);   // cool dwarfs glow almost only in the infrared: keep the look dark
   const g = new THREE.Group(); const parts = { color };
   if (cls === 'asteroid' || cls === 'comet') {
     const r = rock(p.seed ?? 1.7); g.add(r); parts.mesh = r;
@@ -137,8 +138,14 @@ export function renderObject(el, params = {}) {
   const bodies = [body(cls, p)];
   if (p.binary) { const b2 = body(cls, { ...p, temp_K: p.temp2_K ?? p.temp_K, seed: 2.9 }); b2.g.scale.setScalar(p.scale2 ?? .85); bodies.push(b2); }
   bodies.forEach(b => scene.add(b.g));
+  let sunR = 0;   // reference Sun (sun_ratio = R☉/R★), beside the star; clamped so both stay visible
+  if (p.sun_ratio > 0) {
+    sunR = Math.min(8, Math.max(.04, p.sun_ratio));
+    const sun = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 64), bodyMaterial(kelvinRGB(5772), 0));
+    sun.scale.setScalar(sunR); sun.position.set(1.6 + sunR * 1.3, 0, 0); scene.add(sun);
+  }
   if (bodies.some(b => b.lit)) { scene.add(new THREE.AmbientLight(0xffffff, .25)); const sun = new THREE.DirectionalLight(0xfff4e0, 2.2); sun.position.set(-5, 2, 4); scene.add(sun); }
-  camera.position.set(0, .6, p.binary ? 9 : (cls === 'comet' ? 14 : 5.2)); if (cls === 'comet') controls.target.set(4, 0, 0);
+  camera.position.set(0, .6, p.binary ? 9 : (cls === 'comet' ? 14 : 5.2 + sunR * 2.2)); if (sunR) controls.target.set(.8 + sunR * .65, 0, 0); if (cls === 'comet') controls.target.set(4, 0, 0);
   const size = () => { const w = el.clientWidth || 400, h = el.clientHeight || 400; renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix(); };
   const ro = new ResizeObserver(size); ro.observe(el); size();
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -148,7 +155,7 @@ export function renderObject(el, params = {}) {
     bodies.forEach((b, i) => {
       const q = b.parts; if (q.mat) q.mat.uniforms.time.value = t;
       if (spin) b.g.rotation.y += dt * (b.lit ? .25 : .12);
-      if (cls === 'mira') { const ph = 2 * Math.PI * t / 8; b.g.scale.setScalar(1 + .12 * Math.sin(ph)); q.mat.uniforms.col.value = kelvinRGB(p.temp_K * (1 + .08 * Math.sin(ph))); }   // 8 s ≙ one period (sped up)
+      if (cls === 'mira' || p.pulse) { const ph = 2 * Math.PI * t / 8; b.g.scale.setScalar(1 + (p.pulse ?? .12) * Math.sin(ph)); q.mat.uniforms.col.value = kelvinRGB(p.temp_K * (1 + .08 * Math.sin(ph))); }   // 8 s ≙ one period (sped up)
       if (cls === 'young-star' && q.mat) q.mat.uniforms.col.value = kelvinRGB(p.temp_K).multiplyScalar(.8 + .2 * Math.sin(t * 1.7) * Math.sin(t * .37));
       if (p.binary) { const a = t * .4 + i * Math.PI, r = i ? 2.4 : 1.8; b.g.position.set(Math.cos(a) * r, 0, Math.sin(a) * r); }
     });

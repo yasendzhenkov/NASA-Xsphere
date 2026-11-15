@@ -707,3 +707,22 @@ button.area-btn { cursor: pointer; font: inherit; font-size: 13px; }
 /* no browser pinch-zoom of the page itself (pinch zooms the sky map); cards still scroll */
 .skymap { touch-action: pan-x pan-y; }
 .skymap__stage { touch-action: none; }
+
+/* View in 3D (web/src/ui/star3d) */
+.s3dbtn { margin-top: 10px; display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--glass-line); background: rgba(255,255,255,.04); color: var(--fg); font: inherit; font-size: var(--t-s); cursor: pointer; }
+.s3dbtn:hover, .s3dbtn:focus-visible { border-color: var(--accent); color: var(--accent); }
+.s3d { position: fixed; inset: 0; z-index: 60; background: #05070b; }
+.s3d__view { position: absolute; inset: 0; }
+.s3d__card { position: absolute; top: 16px; left: 16px; width: min(360px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; padding: 14px 16px; border-radius: var(--radius); background: var(--glass); border: 1px solid var(--glass-line); box-shadow: var(--shadow); backdrop-filter: blur(10px); }
+.s3d__head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.s3d__head h3 { margin: 0; font-size: 1.05rem; }
+.s3d__label { margin: 6px 0 10px; color: var(--warn); font-size: var(--t-xs); font-weight: 600; }
+.s3d__params { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; font-size: var(--t-s); }
+.s3d__params dt { color: var(--fg-faint); }
+.s3d__params dd { margin: 0; }
+.s3d__params small { display: block; color: var(--fg-dim); font-family: var(--font); font-size: var(--t-xs); }
+.s3d__pm { display: block; margin: 10px 0 0; color: var(--fg-dim); }
+.s3d__pm text { fill: currentColor; font: 10px var(--mono); }
+.s3d__pm line { stroke: var(--mark); stroke-width: 2; }
+.s3d__pm circle, .s3d__pm path { fill: var(--mark); }
+.s3d__note { margin: 8px 0 0; color: var(--fg-dim); font-size: var(--t-xs); }
