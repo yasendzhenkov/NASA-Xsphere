@@ -6,7 +6,7 @@
 
 NASA Space Apps Challenge 2026 · [Planet X and SPHEREx](https://www.spaceappschallenge.org/2026/challenges/planet-x-and-spherex/)
 
-Videos: [30-second demo] · [2-minute explainer]
+Videos: [30-second demo](https://spherex-blink-demo.vercel.app/) · [2-minute explainer]
 
 ## What it does
 - **Type a name or coordinates, see the sky blink.** Any catalogued name (typos forgiven, CDS Sesame fallback) or RA/Dec opens the same patch at every SPHEREx visit, played like a little video, the way the 1930 blink comparator found Pluto.
